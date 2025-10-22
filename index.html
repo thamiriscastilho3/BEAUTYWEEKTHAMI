@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -50,7 +49,6 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
             display: block; 
 
-            /* FUNDO PADRÃO */
             background-image: url('./assets/background-card.png'); 
             background-size: cover;
             background-position: center;
@@ -91,7 +89,8 @@
             font-size: 1em;
             font-weight: 400;
             color: #4a4a4a;
-            margin: 0;
+            /* 🚨 CORREÇÃO: Adicionando margem na parte inferior do label para separar do valor */
+            margin: 0 0 5px 0; 
             display: block;
         }
 
@@ -165,17 +164,15 @@
             z-index: 20;
         }
 
-        /* 🚨 ALTERAÇÃO SOLICITADA */
         #card-sku {
-            font-size: 1.0em; /* Alterado de 1.2em */
+            font-size: 1.0em; 
             font-weight: 400; 
             color: #ffffff; 
             margin: 0; 
         }
         
-        /* 🚨 ALTERAÇÃO SOLICITADA */
         #card-nome-produto {
-            font-size: 0.7em; /* Alterado de 1.5em */
+            font-size: 0.7em; 
             font-weight: 700; 
             color: #ffffff; 
             margin: 0; 
@@ -202,7 +199,7 @@
             <div id="step-1" class="step active">
                 <h2>1. Upload da Planilha de Dados</h2>
                 
-                <p>O design do Card está fixo na imagem de fundo. Você precisa apenas das informações mutáveis na planilha.</p>
+                <p>⚠️ **LEIA:** Para que o download e a prévia funcionem, **você deve rodar este arquivo em um servidor local** (ex: usando Python `http.server` na sua pasta). Rodar direto do disco rígido (`file:///`) causa o erro de segurança.</p>
 
                 <p>Use o Google Planilhas para preencher sua base de dados. Siga os passos:</p>
                 
@@ -367,7 +364,7 @@
             return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
         
-        // 🚨 FUNÇÃO PARA GERAR A IMAGEM COMO DATAURL
+        // FUNÇÃO PARA GERAR A IMAGEM COMO DATAURL
         const gerarCardData = async (produto) => {
              const SCALE_FACTOR = 1.8;
              
@@ -395,7 +392,7 @@
              
              const canvas = await html2canvas(document.getElementById('card-preview'), { 
                  scale: SCALE_FACTOR,
-                 useCORS: true,
+                 useCORS: true, 
                  x: 0,
                  y: 0,
              });
@@ -411,7 +408,7 @@
              return canvas.toDataURL('image/png');
         };
 
-        // FUNÇÃO DE DOWNLOAD INDIVIDUAL (mantida para facilitar o download de 1 item)
+        // FUNÇÃO DE DOWNLOAD INDIVIDUAL
         const gerarCardIndividual = async () => {
              if (cardAtualIndex === -1) {
                  alert("Por favor, selecione um card na lista antes de tentar baixar.");
@@ -419,20 +416,25 @@
              }
              
              const produto = dadosPlanilha.find(p => p.id === cardAtualIndex);
-             const dataURL = await gerarCardData(produto); // Obtém os dados
+             try {
+                 const dataURL = await gerarCardData(produto); 
 
-             const link = document.createElement('a');
-             const tituloLimpo = (produto['Título Principal'] || 'card').replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-             const skuLimpo = (produto['SKU'] || 'sem-sku').replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-             
-             link.download = `${tituloLimpo}-${skuLimpo}-600x1066.png`;
-             link.href = dataURL;
-             link.click();
+                 const link = document.createElement('a');
+                 const tituloLimpo = (produto['Título Principal'] || 'card').replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+                 const skuLimpo = (produto['SKU'] || 'sem-sku').replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+                 
+                 link.download = `${tituloLimpo}-${skuLimpo}-600x1066.png`;
+                 link.href = dataURL;
+                 link.click();
 
-             document.getElementById(`status-${produto.id}`).innerText = 'Card Gerado';
+                 document.getElementById(`status-${produto.id}`).innerText = 'Card Gerado';
+             } catch (e) {
+                 alert("ERRO de Segurança: O download falhou. Certifique-se de estar rodando este arquivo em um servidor local/online (ex: GitHub Pages).");
+                 console.error("ERRO DE DOWNLOAD:", e);
+             }
         };
 
-        // 🚨 FUNÇÃO PARA GERAR O ZIP
+        // FUNÇÃO PARA GERAR O ZIP
         const gerarTodosCards = async () => {
             const cardsParaGerar = dadosPlanilha;
             
@@ -448,6 +450,7 @@
 
             const zip = new JSZip();
             const pasta = zip.folder("cards-gerados");
+            let erroEncontrado = false;
             
             for (const produto of cardsParaGerar) {
                 try {
@@ -467,16 +470,26 @@
                     
                 } catch (e) {
                     console.error(`Falha ao gerar o card para ${produto['Título Principal']}:`, e);
-                    document.getElementById(`status-${produto.id}`).innerText = 'ERRO';
+                    document.getElementById(`status-${produto.id}`).innerText = 'ERRO DE SEGURANÇA';
+                    erroEncontrado = true;
                 }
             }
+            
+            if (erroEncontrado) {
+                 alert("⚠️ A Geração em Massa falhou. Isso pode indicar que nem todas as imagens foram incluídas no ZIP devido a erros de segurança (CORS). Verifique os detalhes no console (F12).");
+            }
+
 
             // 4. Gera o arquivo ZIP
             zip.generateAsync({type:"blob"})
             .then(function(content) {
-                // 5. Usa FileSaver.js para iniciar o download único
-                saveAs(content, "cards_em_massa.zip");
-                alert("Geração em massa concluída! Seu download ZIP deve ter iniciado.");
+                if (!erroEncontrado) {
+                     // 5. Usa FileSaver.js para iniciar o download único
+                     saveAs(content, "cards_em_massa.zip");
+                     alert("Geração em massa concluída! Seu download ZIP deve ter iniciado.");
+                } else {
+                     alert("Geração em Massa Incompleta: O ZIP não será gerado devido aos erros de segurança encontrados.");
+                }
             })
             .finally(() => {
                 downloadBtn.innerText = originalText;
@@ -497,7 +510,7 @@
                 worker: true,
                 
                 complete: function(results) {
-                    if (results.errors.length > 0) { console.error(results.errors); alert("Erro na leitura do CSV."); return; }
+                    if (results.errors.length > 0) { console.error("Erros de parsing PapaParse:", results.errors); }
                     if (results.data.length === 0) { alert("A planilha está vazia."); return; }
                     
                     const requiredHeaders = ["Título Principal", "Valor Original", "Valor de Venda", "Nome do Produto", "SKU"];
