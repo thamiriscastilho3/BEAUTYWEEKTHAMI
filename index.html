@@ -49,13 +49,14 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
             display: block; 
 
+            /* IMAGEM DE FUNDO - Deve funcionar no GitHub Pages (HTTPS) */
             background-image: url('./assets/background-card.png'); 
             background-size: cover;
             background-position: center;
             background-color: #000; 
         }
 
-        /* 1. TÍTULO DO CARD (Cor e posição mantidas do seu código) */
+        /* 1. TÍTULO DO CARD */
         #card-titulo {
             position: absolute;
             top: 120px; 
@@ -89,16 +90,14 @@
             font-size: 1em;
             font-weight: 400;
             color: #4a4a4a;
-            /* 🚨 CORREÇÃO: Adicionando margem na parte inferior do label para separar do valor */
-            margin: 0 0 5px 0; 
+            /* 🚨 CORREÇÃO DE MARGEM MAIS ROBUSTA */
+            margin: 0 0 10px 0; /* Aumentando a margem inferior para garantir separação */
             display: block;
         }
 
-        /* Base para os valores: usa Flexbox para alinhar as partes do preço */
+        /* 🚨 SIMPLIFICAÇÃO: Fontes de preço agora são uma única string com R$ */
         #valor-compre-por, #valor-venda-por {
-            display: flex;
-            justify-content: flex-end; 
-            align-items: flex-end; 
+            display: block; /* Garante que o texto ocupe uma linha inteira */
             font-weight: 900;
             color: #ffffff; 
             line-height: 1; 
@@ -106,30 +105,20 @@
         }
 
         #valor-compre-por {
-            font-size: 3.5em; 
+            font-size: 3.5em; /* Valor maior */
             margin-bottom: 15px;
         }
 
         #valor-venda-por {
-            font-size: 2.5em; 
+            font-size: 2.5em; /* Valor menor */
         }
         
-        /* R$ e Centavos (Tamanho menor, alinhados à base) */
-        .valor-moeda, .valor-centavos {
-            font-size: 0.45em; 
-            align-self: flex-end; 
-            padding-bottom: 0.1em; 
-            font-weight: 700;
-            margin-left: 2px;
+        /* 🚨 CLASSES DE DIFERENCIAÇÃO DE FONTE REMOVIDAS */
+        .valor-moeda, .valor-centavos, .valor-reais {
+            display: inline !important; /* Apenas para garantir que não haja conflitos */
         }
 
-        /* O valor-reais (número antes da vírgula) usa o tamanho base (1em) */
-        .valor-reais {
-            font-size: 1em; 
-            line-height: 1;
-        }
-
-        /* 3. IMAGEM DO PRODUTO (Posição mantida do seu código) */
+        /* 3. IMAGEM DO PRODUTO */
         #card-imagem-area {
             position: absolute;
             top: 350px; 
@@ -150,7 +139,7 @@
             background-position: center;
         }
 
-        /* 4. SKU E NOME DO SKU (Cor e posição mantidas do seu código) */
+        /* 4. SKU E NOME DO SKU */
         #card-info-produto {
             position: absolute;
             bottom: 170px; 
@@ -199,7 +188,7 @@
             <div id="step-1" class="step active">
                 <h2>1. Upload da Planilha de Dados</h2>
                 
-                <p>⚠️ **LEIA:** Para que o download e a prévia funcionem, **você deve rodar este arquivo em um servidor local** (ex: usando Python `http.server` na sua pasta). Rodar direto do disco rígido (`file:///`) causa o erro de segurança.</p>
+                <p>⚠️ **LEIA:** O site está funcionando corretamente no GitHub Pages. Certifique-se de que a imagem de fundo está na pasta `/assets/` do seu repositório.</p>
 
                 <p>Use o Google Planilhas para preencher sua base de dados. Siga os passos:</p>
                 
@@ -300,7 +289,7 @@
         let cardAtualIndex = -1; 
         let currentZoom = 1.0; 
 
-        // FUNÇÃO DE RENDERIZAÇÃO DE VALOR
+        // 🚨 FUNÇÃO DE RENDERIZAÇÃO DE VALOR SIMPLIFICADA
         const renderizarValorFormatado = (elementoId, valorString) => {
             const elemento = document.getElementById(elementoId);
             
@@ -308,22 +297,14 @@
             const num = parseFloat(valorTratado);
             
             if (isNaN(num)) {
-                elemento.innerHTML = `<span class="valor-moeda">R$</span><span class="valor-reais">0</span><span class="valor-centavos">,00</span>`;
+                elemento.innerText = 'R$ 0,00';
                 return;
             }
 
-            const valorFormatado = num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            // Formata a string completa, incluindo o R$
+            const valorFormatado = num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
             
-            const valorSemMoeda = valorFormatado.replace('R$', '').trim();
-            const partes = valorSemMoeda.split(',');
-            const reais = partes[0] || '0';
-            const centavos = partes[1] || '00';
-            
-            elemento.innerHTML = `
-                <span class="valor-moeda">R$</span>
-                <span class="valor-reais">${reais}</span>
-                <span class="valor-centavos">,${centavos}</span>
-            `;
+            elemento.innerText = valorFormatado;
         };
         
         // --- FUNÇÕES DE ZOOM ---
