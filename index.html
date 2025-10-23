@@ -55,6 +55,11 @@
             background-position: center;
             background-color: #000; 
         }
+        
+        /* Classe para ocultar elementos condicionalmente */
+        .hidden {
+            display: none !important;
+        }
 
         /* 1. TÍTULO DO CARD */
         #card-titulo {
@@ -85,39 +90,45 @@
             font-family: sans-serif;
             font-weight: 700;
         }
+        
+        /* Contêiner do preço maior (COMPRE POR) */
+        .precos-original-container {
+            margin-bottom: 15px;
+        }
+        
+        /* Contêiner do preço de venda (VENDA POR) - Agora condicional */
+        .precos-venda-container {
+            /* Sem margem inferior, pois é o último elemento de preço */
+        }
 
         #label-compre-por, #label-venda-por {
             font-size: 1em;
             font-weight: 400;
             color: #4a4a4a;
-            /* 🚨 CORREÇÃO DE MARGEM MAIS ROBUSTA */
-            margin: 0 0 10px 0; /* Aumentando a margem inferior para garantir separação */
+            margin: 0 0 10px 0; 
             display: block;
         }
 
-        /* 🚨 SIMPLIFICAÇÃO: Fontes de preço agora são uma única string com R$ */
-        #valor-compre-por, #valor-venda-por {
-            display: block; /* Garante que o texto ocupe uma linha inteira */
+        /* Preço de compra (ORIGINAL) */
+        #valor-compre-por {
+            display: block; 
             font-weight: 900;
             color: #ffffff; 
             line-height: 1; 
             margin: 0;
+            font-size: 3.5em; /* Valor maior */
         }
 
-        #valor-compre-por {
-            font-size: 2.5em; /* Valor maior */
-            margin-bottom: 15px;
-        }
-
+        /* Preço de venda (MENOR) */
         #valor-venda-por {
-            font-size: 2.0em; /* Valor menor */
+            display: block;
+            font-weight: 900;
+            color: #ffffff; 
+            line-height: 1; 
+            margin: 0;
+            font-size: 2.5em; /* Valor menor */
         }
         
-        /* 🚨 CLASSES DE DIFERENCIAÇÃO DE FONTE REMOVIDAS */
-        .valor-moeda, .valor-centavos, .valor-reais {
-            display: inline !important; /* Apenas para garantir que não haja conflitos */
-        }
-
         /* 3. IMAGEM DO PRODUTO */
         #card-imagem-area {
             position: absolute;
@@ -170,7 +181,7 @@
             word-wrap: break-word;
         }
 
-        /* Removemos elementos não utilizados no novo design */
+        /* Elementos não utilizados */
         #card-subtitulo, #card-valor-overlay, #card-footer-legal, 
         #card-titulo-container {
             display: none !important;
@@ -261,11 +272,15 @@
             </div>
             
             <div class="precos-container">
-                <span id="label-compre-por">COMPRE POR</span>
-                <span id="valor-compre-por">000,00</span>
+                <div class="precos-original-container">
+                    <span id="label-compre-por">COMPRE POR</span>
+                    <span id="valor-compre-por">000,00</span>
+                </div>
                 
-                <span id="label-venda-por">VENDA POR</span>
-                <span id="valor-venda-por">000,00</span>
+                <div id="precos-venda-box" class="precos-venda-container">
+                    <span id="label-venda-por">VENDA POR</span>
+                    <span id="valor-venda-por">000,00</span>
+                </div>
             </div>
 
             <div id="card-info-produto">
@@ -289,7 +304,7 @@
         let cardAtualIndex = -1; 
         let currentZoom = 1.0; 
 
-        // 🚨 FUNÇÃO DE RENDERIZAÇÃO DE VALOR SIMPLIFICADA
+        // FUNÇÃO DE RENDERIZAÇÃO DE VALOR SIMPLIFICADA
         const renderizarValorFormatado = (elementoId, valorString) => {
             const elemento = document.getElementById(elementoId);
             
@@ -298,13 +313,14 @@
             
             if (isNaN(num)) {
                 elemento.innerText = 'R$ 0,00';
-                return;
+                return 0; // Retorna 0 se for inválido
             }
 
             // Formata a string completa, incluindo o R$
             const valorFormatado = num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
             
             elemento.innerText = valorFormatado;
+            return num; // Retorna o valor numérico para verificação condicional
         };
         
         // --- FUNÇÕES DE ZOOM ---
@@ -469,6 +485,7 @@
                      saveAs(content, "cards_em_massa.zip");
                      alert("Geração em massa concluída! Seu download ZIP deve ter iniciado.");
                 } else {
+                     // Se houve erro de download individual, não gerar o ZIP
                      alert("Geração em Massa Incompleta: O ZIP não será gerado devido aos erros de segurança encontrados.");
                 }
             })
@@ -573,13 +590,29 @@
             cardAtualIndex = id;
             const produto = dadosPlanilha.find(p => p.id === id); 
             if (!produto) return;
+            
+            // Elementos
+            const vendaBox = document.getElementById('precos-venda-box');
 
+            // 1. Atualiza Título e Infos
             document.getElementById('card-titulo').innerText = produto['Título Principal'] || 'TÍTULO DO CARD';
-            renderizarValorFormatado('valor-compre-por', produto['Valor Original']);
-            renderizarValorFormatado('valor-venda-por', produto['Valor de Venda']);
             document.getElementById('card-nome-produto').innerText = produto['Nome do Produto'] || 'NOME DO SKU';
             document.getElementById('card-sku').innerText = produto['SKU'] || 'SKU';
             
+            // 2. Atualiza Preço Original (COMPRE POR)
+            renderizarValorFormatado('valor-compre-por', produto['Valor Original']);
+
+            // 3. Atualiza Preço de Venda (VENDA POR) E GERE OCULTAÇÃO CONDICIONAL 🚨
+            const valorVendaNum = renderizarValorFormatado('valor-venda-por', produto['Valor de Venda']);
+            
+            // Verifica se o valor de Venda é zero, vazio, ou inválido
+            if (valorVendaNum > 0) {
+                 vendaBox.classList.remove('hidden');
+            } else {
+                 vendaBox.classList.add('hidden');
+            }
+            
+            // 4. Atualiza Imagem
             const cardImagemDiv = document.getElementById('card-imagem');
             cardImagemDiv.style.backgroundImage = produto.imagem ? `url('${produto.imagem}')` : 'none';
         };
