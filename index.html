@@ -272,7 +272,7 @@
             </div>
             
             <div class="precos-container">
-                <div class="precos-original-container">
+                <div id="precos-original-box" class="precos-original-container">
                     <span id="label-compre-por">COMPRE POR</span>
                     <span id="valor-compre-por">000,00</span>
                 </div>
@@ -591,7 +591,8 @@
             const produto = dadosPlanilha.find(p => p.id === id); 
             if (!produto) return;
             
-            // Elementos
+            // Elementos dos Preços
+            const originalBox = document.getElementById('precos-original-box');
             const vendaBox = document.getElementById('precos-venda-box');
 
             // 1. Atualiza Título e Infos
@@ -599,13 +600,18 @@
             document.getElementById('card-nome-produto').innerText = produto['Nome do Produto'] || 'NOME DO SKU';
             document.getElementById('card-sku').innerText = produto['SKU'] || 'SKU';
             
-            // 2. Atualiza Preço Original (COMPRE POR)
-            renderizarValorFormatado('valor-compre-por', produto['Valor Original']);
-
-            // 3. Atualiza Preço de Venda (VENDA POR) E GERE OCULTAÇÃO CONDICIONAL 🚨
+            // 2. Atualiza Preço Original (COMPRE POR) E OCULTA CONDICIONALMENTE 🚨
+            const valorOriginalNum = renderizarValorFormatado('valor-compre-por', produto['Valor Original']);
+            
+            if (valorOriginalNum > 0) {
+                 originalBox.classList.remove('hidden');
+            } else {
+                 originalBox.classList.add('hidden');
+            }
+            
+            // 3. Atualiza Preço de Venda (VENDA POR) E OCULTA CONDICIONALMENTE
             const valorVendaNum = renderizarValorFormatado('valor-venda-por', produto['Valor de Venda']);
             
-            // Verifica se o valor de Venda é zero, vazio, ou inválido
             if (valorVendaNum > 0) {
                  vendaBox.classList.remove('hidden');
             } else {
@@ -631,5 +637,6 @@
     </script>
 </body>
 </html>
+
 
 
